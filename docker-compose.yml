@@ -25,24 +25,28 @@ services:
       - "dev"
       - "frontend"
   mongo:
-    image: mongo
-    restart: always
+    image: mongo:latest
+    container_name: mongo
+    restart: unless-stopped
     command: mongod --replSet rs0 --bind_ip_all
     ports:
-    - 27017:27017 # admin
+      - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: astralys
     healthcheck:
       test: |
-        test $$(mongosh --quiet --eval "try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1' }] }).ok } catch (_) { rs.status().ok }") -eq 1
-      interval: 3s
-      start_period: 3s
-    volumes:
-      - ./data:/out
+        test $$(mongosh --quiet --eval "try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok } catch (_) { rs.status().ok }") -eq 1
+      interval: 5s
+      start_period: 5s
+
   mongo-express:
-    image: mongo-express
-    restart: always
-    network_mode: host
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_SERVER: 127.0.0.1
-      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_URL: "mongodb://mongo:27017/astralys?directConnection=true"
+    depends_on:
+      mongo:
+        condition: service_healthy
