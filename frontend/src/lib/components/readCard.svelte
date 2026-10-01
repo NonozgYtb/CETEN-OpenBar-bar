@@ -27,7 +27,7 @@
 		}
 
 		function connect() {
-			const currentSocket = new WebSocket('ws://localhost:3737/');
+			const currentSocket = new WebSocket('wss://bar-fake.nonozg.ovh/ws');
 			socket = currentSocket;
 			currentSocket.onmessage = (event) => {
 				if (!mounted || socket !== currentSocket) return;

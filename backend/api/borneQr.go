@@ -161,7 +161,7 @@ func (s *Server) CallbackQRAuth(c echo.Context, params autogen.CallbackParams, s
 	connectionCache.Set(nonce, account, cache.DefaultExpiration)
 	room.Broadcast([]byte(`{"type": "nonce", "data": "` + nonce + `"}`))
 
-	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+"/borne/connected")
+	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+conf.PathConfig.ConnectSuccessPath)
 }
 
 var connectionCache = cache.New(5*time.Minute, 10*time.Minute)

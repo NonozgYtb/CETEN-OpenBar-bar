@@ -1,48 +1,86 @@
-version: '3.5'
-
 services:
-  backend:
+  bar-frontv2:
     build:
+      context: frontend-2
       dockerfile: Dockerfile
-      network: host
-      context: backend
+    image: bar-frontv2:prod
     ports:
-      - 9999:8080
+      - "50020:3000"
     env_file:
       - backend/.env
-    profiles:
-      - "dev"
-  frontend:
+    networks:
+      - bar
+
+  bar-backend:
     build:
       dockerfile: Dockerfile
-      network: host
+      context: backend
+    image: bar-backend:prod
+    ports:
+      - "50080:8080"
+    env_file:
+      - backend/.env
+    networks:
+      - bar
+    volumes:
+      - bar-storage:/storage:rw
+
+  bar-frontend:
+    build:
+      dockerfile: Dockerfile
       context: frontend
+    image: bar-frontend:prod
     volumes:
       - ./frontend/static/config.dev.json:/app/build/client/config.json:ro
     ports:
-      - 9998:3000
-    profiles:
-      - "dev"
-      - "frontend"
-  mongo:
-    image: mongo
-    restart: always
+      - "50010:3000"
+    networks:
+      - bar
+
+  bar-mock:
+    build:
+      context: ./fake
+      dockerfile: Dockerfile
+    image: bar-mock:prod
+    ports:
+      - "50050:5050"
+    restart: unless-stopped
+    networks:
+      - bar
+
+  bar-mongo:
+    image: mongo:latest
+    restart: unless-stopped
     command: mongod --replSet rs0 --bind_ip_all
     ports:
-    - 27017:27017 # admin
+      - "50017:27017"
     environment:
       MONGO_INITDB_DATABASE: astralys
     healthcheck:
       test: |
-        test $$(mongosh --quiet --eval "try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1' }] }).ok } catch (_) { rs.status().ok }") -eq 1
-      interval: 3s
-      start_period: 3s
+        test $$(mongosh --quiet --eval "try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'bar-mongo:27017' }] }).ok } catch (_) { rs.status().ok }") -eq 1
+      interval: 5s
+      start_period: 5s
     volumes:
-      - ./data:/out
-  mongo-express:
-    image: mongo-express
-    restart: always
-    network_mode: host
+      - bar-mongo-data:/data/db
+    networks:
+      - bar
+
+  bar-mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    ports:
+      - "50081:8081"
     environment:
-      ME_CONFIG_MONGODB_SERVER: 127.0.0.1
-      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_URL: "mongodb://bar-mongo:27017/astralys?directConnection=true"
+      ME_CONFIG_BASICAUTH_USERNAME: ME-username # Change this to a secure username
+      ME_CONFIG_BASICAUTH_PASSWORD: ME-password # Change this to a secure password
+    depends_on:
+      bar-mongo:
+        condition: service_healthy
+    networks:
+      - bar
+
+networks:
+  bar:
+    driver: bridge

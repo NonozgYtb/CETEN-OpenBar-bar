@@ -44,12 +44,12 @@ func NewHelloAssoClient() (*helloasso.ClientWithResponses, error) {
 func (s *Server) SetupHelloAsso() error {
 	client, err := NewHelloAssoClient()
 	if err != nil || client == nil {
-		logrus.Error("Error initializing HelloAsso client : ", err);
-		return err;
+		logrus.Error("Error initializing HelloAsso client : ", err)
+		return err
 	}
-	s.HelloAssoClient = client;
+	s.HelloAssoClient = client
 	logrus.Info("HelloAsso client initialized successfully !")
-	return nil;
+	return nil
 }
 
 func NewServer(db db.DBackend) *Server {
@@ -59,23 +59,23 @@ func NewServer(db db.DBackend) *Server {
 		nil,
 	}
 
-	err := s.SetupHelloAsso();
+	err := s.SetupHelloAsso()
 	if err != nil {
 		// Retry HelloAsso setup later and run without remote refills
 		logrus.Info("Could not initialize HelloAsso client, trying again every 2 minutes")
 		go func() {
-			// API rate limits for authentication endpoints are 
-    		// 10 calls per 10 seconds
-    		// 20 calls per 10 minutes
-    		// 50 calls per hour
+			// API rate limits for authentication endpoints are
+			// 10 calls per 10 seconds
+			// 20 calls per 10 minutes
+			// 50 calls per hour
 			ticker := time.NewTicker(2 * time.Minute)
 			defer ticker.Stop()
-			
+
 			for range ticker.C {
 				err := s.SetupHelloAsso()
 				if err == nil {
 					// Setup was successful, stop the task
-					return;
+					return
 				}
 			}
 		}()
@@ -97,7 +97,7 @@ func (s *Server) getOnboardSess(c echo.Context) *sessions.Session {
 
 // The remote refill subsystem can only be used if the helloasso client is available
 func (s *Server) remoteRefillsAvailable() bool {
-	return s.HelloAssoClient != nil;
+	return s.HelloAssoClient != nil
 }
 
 func (s *Server) Serve(c *config.Config) error {
@@ -151,18 +151,28 @@ func (s *Server) Serve(c *config.Config) error {
 	go func() {
 		ticker := time.NewTicker(c.HelloAssoConfig.CheckoutProcessingInterval)
 		defer ticker.Stop()
-		
+
 		ctx := context.Background()
 
+		logrus.Info("Running HelloAsso processing task")
+
 		for range ticker.C {
+			logrus.Info("Running HelloAsso processing task")
 			if s.remoteRefillsAvailable() {
+				logrus.Info("HelloAsso client is available, processing started refills")
 				s.ProcessStartedRefills(ctx)
-			}	
+			}
 		}
 	}()
 
-	if err := e.Start(c.ApiConfig.Port); err != nil {
-		return err
+	if c.ServerConfig.CertFile != nil && c.ServerConfig.KeyFile != nil {
+		if err := e.StartTLS("0.0.0.0:8080", *c.ServerConfig.CertFile, *c.ServerConfig.KeyFile); err != nil {
+			return err
+		}
+	} else {
+		if err := e.Start(c.ApiConfig.Port); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -30,19 +30,35 @@ type Config struct {
 	} `envPrefix:"BAR_OAUTH_"`
 
 	HelloAssoConfig struct {
-		URL          				string `env:"URL" envDefault:"https://api.helloasso.com"`
-		ClientID     				string `env:"CLIENT_ID"`
-		ClientSecret 				string `env:"CLIENT_SECRET"`
-		Slug         				string `env:"SLUG"`
+		URL          string `env:"URL" envDefault:"https://api.helloasso.com"`
+		ClientID     string `env:"CLIENT_ID"`
+		ClientSecret string `env:"CLIENT_SECRET"`
+		Slug         string `env:"SLUG"`
 		// Interval between each run of the checkout processing
-		CheckoutProcessingInterval	time.Duration `env:"CHECKOUT_PROCESSING_INTERVAL" envDefault:"10m"`
+		CheckoutProcessingInterval time.Duration `env:"CHECKOUT_PROCESSING_INTERVAL" envDefault:"10m"`
 	} `envPrefix:"HELLOASSO_"`
 
 	StorageConfig struct {
 		StoragePath string `env:"STORAGE_PATH" envDefault:"./storage"`
 	} `envPrefix:"BAR_STORAGE_"`
 	DiscordWebhookURL string `env:"BAR_DISCORD_WEBHOOK_URL" envDefault:""`
-	LogLevel string `env:"BAR_LOG_LEVEL" envDefault:"info"`
+	LogLevel          string `env:"BAR_LOG_LEVEL" envDefault:"info"`
+
+	PathConfig struct {
+		AccountPath        string `env:"ACCOUNT_PATH" envDefault:"/borne/mobile"`
+		AuthPath           string `env:"AUTH_PATH" envDefault:"/auth"`
+		AdminPath          string `env:"ADMIN_PATH" envDefault:"/admin"`
+		ClientCommandePath string `env:"CLIENT_COMMAND_PATH" envDefault:"/client/commande"`
+		ConnectSuccessPath string `env:"CONNECT_SUCCESS_PATH" envDefault:"/borne/connected"`
+		RefillBackPath     string `env:"REFILL_BACK_PATH" envDefault:"/client/index/refill"`
+		RefillErrorPath    string `env:"REFILL_ERROR_PATH" envDefault:"/client/index/refill/callback"`
+		RefillReturnPath   string `env:"REFILL_RETURN_PATH" envDefault:"/client/index/refill/callback"`
+	} `envPrefix:"BAR_PATHS_"`
+
+	ServerConfig struct {
+		CertFile *string `env:"CERT_FILE"`
+		KeyFile  *string `env:"KEY_FILE"`
+	} `envPrefix:"BAR_SERVER_"`
 }
 
 var config Config

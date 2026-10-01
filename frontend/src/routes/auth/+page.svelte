@@ -53,7 +53,7 @@
         class="h-48"
     />
     <div class="flex flex-col items-center justify-center">
-        <a href={api() + "/auth/google?r=client/commande"} class="connect-button mt-4">Connexion avec Google</a>
+        <a href={api() + "/auth/google?r=https://localhost:5173/client/commande"} class="connect-button mt-4">Connexion avec Google</a>
     </div>
 
     {#if noAccountError}
