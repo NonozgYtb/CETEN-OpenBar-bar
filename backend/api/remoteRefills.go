@@ -24,14 +24,13 @@ func (s *Server) GetRemoteRefillStatus(c echo.Context) error {
 		return nil
 	}
 
-	
 	if s.remoteRefillsAvailable() {
-		autogen.GetRemoteRefillStatus200Response{}.VisitGetRemoteRefillStatusResponse(c.Response());
+		autogen.GetRemoteRefillStatus200Response{}.VisitGetRemoteRefillStatusResponse(c.Response())
 	} else {
-		autogen.GetRemoteRefillStatus503Response{}.VisitGetRemoteRefillStatusResponse(c.Response());
+		autogen.GetRemoteRefillStatus503Response{}.VisitGetRemoteRefillStatusResponse(c.Response())
 	}
 
-	return nil;
+	return nil
 }
 
 // Try to validate started refills that were not validated yet.
@@ -41,7 +40,7 @@ func (s *Server) ProcessStartedRefills(c context.Context) error {
 
 	// Prevent execution if helloasso client is not available
 	if !s.remoteRefillsAvailable() {
-		return errors.New("no available helloasso client");
+		return errors.New("no available helloasso client")
 	}
 
 	// Get all started online refills
@@ -62,16 +61,23 @@ func (s *Server) ProcessStartedRefills(c context.Context) error {
 		if err != nil {
 			logrus.WithField("refill_id", refill.Id).Warn("Could not get checkout information from HelloAsso")
 
-			if uint64(time.Now().Unix()) > refill.CreatedAt + 45*60 {
+			if uint64(time.Now().Unix()) > refill.CreatedAt+45*60 {
 				expired = true
 			}
 		}
 
 		// If the checkout cannot be validated after 45 minutes,
 		// it can be considered abandonned (https://dev.helloasso.com/docs/validation-de-vos-paiements)
-		if !valid && uint64(time.Now().Unix()) > refill.CreatedAt + 45*60 {
+		if !valid && uint64(time.Now().Unix()) > refill.CreatedAt+45*60 {
 			expired = true
 		}
+
+		logrus.WithFields(logrus.Fields{
+			"refill_id": refill.Id,
+			"valid":     valid,
+			"expired":   expired,
+			"order":     order,
+		}).Debug("Processing started refill")
 
 		if valid {
 
@@ -100,34 +106,33 @@ func (s *Server) ProcessStartedRefills(c context.Context) error {
 	return nil
 }
 
-
 // Atomically process a validated refill and update the user's balance
 func (s *Server) processRefillPayment(c context.Context, r *models.RemoteRefill, orderId int32) (*models.Refill, error) {
-	
+
 	// Create refill transaction
 	refill := &models.Refill{
 		Refill: autogen.Refill{
-			AccountId:    r.AccountId,
-			AccountName:  r.AccountName,
-			Amount:       int64(r.Amount),
+			AccountId:            r.AccountId,
+			AccountName:          r.AccountName,
+			Amount:               int64(r.Amount),
 			AccountGooglePicture: r.AccountGooglePicture,
-			Type:         autogen.RefillHelloAsso,
-			Id:           uuid.New(),
-			IssuedAt:     uint64(time.Now().Unix()),
-			IssuedBy:     r.AccountId,
-			IssuedByName: r.AccountName,
-			State:        autogen.RefillStateValid,
+			Type:                 autogen.RefillHelloAsso,
+			Id:                   uuid.New(),
+			IssuedAt:             uint64(time.Now().Unix()),
+			IssuedBy:             r.AccountId,
+			IssuedByName:         r.AccountName,
+			State:                autogen.RefillStateValid,
 		},
 	}
 
 	_, err := s.DBackend.WithTransaction(c, func(ctx mongo.SessionContext) (interface{}, error) {
-		
+
 		// Update the remote refill atomically
 		updated, err := s.DBackend.UpdateRemoteRefillStateAtomic(ctx, r, autogen.RemoteRefillProcessed)
 
 		if err != nil {
 			return nil, errors.New("failed to update refill state")
-		} 
+		}
 
 		// The refill was already validated
 		if !updated {
@@ -171,12 +176,11 @@ func (s *Server) processRefillPayment(c context.Context, r *models.RemoteRefill,
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"account_id": r.AccountId,
-		"amount": r.Amount,
-		"refill_id": r.RefillId,
+		"account_id":       r.AccountId,
+		"amount":           r.Amount,
+		"refill_id":        r.RefillId,
 		"remote_refill_id": r.Id,
-		"order_id": r.OrderId,
-
+		"order_id":         r.OrderId,
 	}).Info("HelloAsso refill processed successfully")
 
 	return refill, nil
@@ -184,11 +188,11 @@ func (s *Server) processRefillPayment(c context.Context, r *models.RemoteRefill,
 
 // Returns true if an HelloAsso checkout has been payed.
 // The error returned can be displayed to the user directly
-func (s *Server) validateHelloAssoCheckout(ctx context.Context, checkoutIntentId int32, expectedAmount int32) (bool, *helloasso.HelloAssoApiV5ModelsStatisticsOrderDetail, error){
-	
+func (s *Server) validateHelloAssoCheckout(ctx context.Context, checkoutIntentId int32, expectedAmount int32) (bool, *helloasso.HelloAssoApiV5ModelsStatisticsOrderDetail, error) {
+
 	// Prevent execution if helloasso client is not available
 	if !s.remoteRefillsAvailable() {
-		return false, nil, errors.New("no available helloasso client");
+		return false, nil, errors.New("no available helloasso client")
 	}
 
 	// Get the checkout from HelloAsso
@@ -230,9 +234,9 @@ func (s *Server) StartRemoteRefill(c echo.Context, params autogen.StartRemoteRef
 	if !s.remoteRefillsAvailable() {
 		autogen.StartRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrServiceUnavailable,
-			Message: autogen.Messages("Remote refills are currently unavailable"),
-		}.VisitStartRemoteRefillResponse(c.Response());
-		return errors.New("no available helloasso client");
+			Message:   autogen.Messages("Remote refills are currently unavailable"),
+		}.VisitStartRemoteRefillResponse(c.Response())
+		return errors.New("no available helloasso client")
 	}
 
 	// Get account from cookie
@@ -249,26 +253,26 @@ func (s *Server) StartRemoteRefill(c echo.Context, params autogen.StartRemoteRef
 
 	// Start a checkout for this user
 
-	var metadata interface{} = map[string] interface{}{
+	var metadata interface{} = map[string]interface{}{
 		"user_id": user.Id,
-		"amount": params.Amount,
-	};
+		"amount":  params.Amount,
+	}
 
 	resp, err := s.HelloAssoClient.PostOrganizationsOrganizationSlugCheckoutIntentsWithResponse(
-			c.Request().Context(),
-			conf.HelloAssoConfig.Slug,
-			helloasso.HelloAssoApiV5ModelsCartsInitCheckoutBody{
-				BackUrl:           conf.ApiConfig.FrontendBasePath + "/client/index/refill",
-				ErrorUrl:          conf.ApiConfig.FrontendBasePath + "/client/index/refill/callback",
-				ReturnUrl:         conf.ApiConfig.FrontendBasePath + "/client/index/refill/callback",
-				InitialAmount:     int32(params.Amount),
-				TotalAmount:       int32(params.Amount),
-				ContainsDonation:  false,
-				ItemName:          "Rechargement Bar",
-				Metadata:          &metadata,
-			},
-		)
-	
+		c.Request().Context(),
+		conf.HelloAssoConfig.Slug,
+		helloasso.HelloAssoApiV5ModelsCartsInitCheckoutBody{
+			BackUrl:          conf.ApiConfig.FrontendBasePath + conf.PathConfig.RefillBackPath,
+			ErrorUrl:         conf.ApiConfig.FrontendBasePath + conf.PathConfig.RefillErrorPath,
+			ReturnUrl:        conf.ApiConfig.FrontendBasePath + conf.PathConfig.RefillReturnPath,
+			InitialAmount:    int32(params.Amount),
+			TotalAmount:      int32(params.Amount),
+			ContainsDonation: false,
+			ItemName:         "Rechargement Bar",
+			Metadata:         &metadata,
+		},
+	)
+
 	if err != nil {
 		logrus.Error(err)
 		return autogen.StartRemoteRefill500JSONResponse{}.VisitStartRemoteRefillResponse(c.Response())
@@ -280,16 +284,15 @@ func (s *Server) StartRemoteRefill(c echo.Context, params autogen.StartRemoteRef
 		return autogen.StartRemoteRefill500JSONResponse{}.VisitStartRemoteRefillResponse(c.Response())
 	}
 
-
 	// Save the checkout intent
 
 	refill := &models.RemoteRefill{
 		RemoteRefill: autogen.RemoteRefill{
-			Id:           uuid.New(),
-			State: 		  autogen.RemoteRefillStarted,
-			AccountId:    user.Id,
-			AccountName:  user.Name(),
-			Amount:       params.Amount,
+			Id:               uuid.New(),
+			State:            autogen.RemoteRefillStarted,
+			AccountId:        user.Id,
+			AccountName:      user.Name(),
+			Amount:           params.Amount,
 			CheckoutIntentId: resp.JSON200.Id,
 		},
 	}
@@ -309,7 +312,7 @@ func (s *Server) StartRemoteRefill(c echo.Context, params autogen.StartRemoteRef
 
 // (POST /account/remote-refills/validate)
 func (s *Server) SelfValidateRemoteRefill(c echo.Context, params autogen.SelfValidateRemoteRefillParams) error {
-	
+
 	// Get account from cookie
 	user, err := MustGetUser(c)
 	if err != nil {
@@ -320,9 +323,9 @@ func (s *Server) SelfValidateRemoteRefill(c echo.Context, params autogen.SelfVal
 	if !s.remoteRefillsAvailable() {
 		autogen.SelfValidateRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrServiceUnavailable,
-			Message: autogen.Messages("Remote refills are currently unavailable"),
-		}.VisitSelfValidateRemoteRefillResponse(c.Response());
-		return errors.New("no available helloasso client");
+			Message:   autogen.Messages("Remote refills are currently unavailable"),
+		}.VisitSelfValidateRemoteRefillResponse(c.Response())
+		return errors.New("no available helloasso client")
 	}
 
 	// Get the remote refill to validate
@@ -343,15 +346,14 @@ func (s *Server) SelfValidateRemoteRefill(c echo.Context, params autogen.SelfVal
 
 	// Check if the payment has been made
 	valid, order, err := s.validateHelloAssoCheckout(c.Request().Context(), params.CheckoutIntentId, remote_refill.Amount)
-	
+
 	if err != nil {
 		autogen.SelfValidateRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrInternalServerError,
-			Message: autogen.Messages(err.Error()),
+			Message:   autogen.Messages(err.Error()),
 		}.VisitSelfValidateRemoteRefillResponse(c.Response())
 		return err
 	}
-
 
 	// Payment not validated by helloasso yet, reject the refill
 	if !valid {
@@ -366,7 +368,7 @@ func (s *Server) SelfValidateRemoteRefill(c echo.Context, params autogen.SelfVal
 		logrus.Error(err)
 		autogen.SelfValidateRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrInternalServerError,
-			Message: autogen.MsgInternalServerError,
+			Message:   autogen.MsgInternalServerError,
 		}.VisitSelfValidateRemoteRefillResponse(c.Response())
 		return err
 	}
@@ -418,13 +420,12 @@ func (s *Server) GetRemoteRefills(c echo.Context, params autogen.GetRemoteRefill
 
 	autogen.GetRemoteRefills200JSONResponse{
 		RemoteRefills: refills,
-		Limit: limit,
-		Page: page,
-		MaxPage: maxPage,
+		Limit:         limit,
+		Page:          page,
+		MaxPage:       maxPage,
 	}.VisitGetRemoteRefillsResponse(c.Response())
 	return nil
 }
-
 
 // (GET /account/remote-refills/pending)
 func (s *Server) GetPendingRemoteRefills(c echo.Context) error {
@@ -436,10 +437,10 @@ func (s *Server) GetPendingRemoteRefills(c echo.Context) error {
 
 	data, err := s.DBackend.GetAllPendingRemoteRefillsForAccount(c.Request().Context(), user.Id.String())
 	if err != nil {
-		return Error500(c);
+		return Error500(c)
 	}
 
-	var refills []autogen.RemoteRefill = make([]autogen.RemoteRefill, 0);
+	var refills []autogen.RemoteRefill = make([]autogen.RemoteRefill, 0)
 
 	for _, refill := range data {
 		refills = append(refills, refill.RemoteRefill)
@@ -447,13 +448,13 @@ func (s *Server) GetPendingRemoteRefills(c echo.Context) error {
 
 	autogen.GetPendingRemoteRefills200JSONResponse{
 		RemoteRefills: refills,
-	}.VisitGetPendingRemoteRefillsResponse(c.Response());
-	return nil;
+	}.VisitGetPendingRemoteRefillsResponse(c.Response())
+	return nil
 }
 
 // (POST /remote-refills/validate)
 func (s *Server) VerifyRemoteRefill(c echo.Context, params autogen.VerifyRemoteRefillParams) error {
-	
+
 	user, err := MustGetAdmin(c)
 	if err != nil {
 		return nil
@@ -463,9 +464,9 @@ func (s *Server) VerifyRemoteRefill(c echo.Context, params autogen.VerifyRemoteR
 	if !s.remoteRefillsAvailable() {
 		autogen.VerifyRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrServiceUnavailable,
-			Message: autogen.Messages("Remote refills are currently unavailable"),
-		}.VisitVerifyRemoteRefillResponse(c.Response());
-		return errors.New("no available helloasso client");
+			Message:   autogen.Messages("Remote refills are currently unavailable"),
+		}.VisitVerifyRemoteRefillResponse(c.Response())
+		return errors.New("no available helloasso client")
 	}
 
 	logrus.WithField("account_id", user.Account.Id).WithField("remote_refill_id", params.Id.String()).Debug("Manually verifying remote refill")
@@ -487,11 +488,11 @@ func (s *Server) VerifyRemoteRefill(c echo.Context, params autogen.VerifyRemoteR
 
 	// Check if the payment has been made
 	valid, order, err := s.validateHelloAssoCheckout(c.Request().Context(), *remote_refill.CheckoutIntentId, remote_refill.Amount)
-	
+
 	if err != nil {
 		autogen.VerifyRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrInternalServerError,
-			Message: autogen.Messages(err.Error()),
+			Message:   autogen.Messages(err.Error()),
 		}.VisitVerifyRemoteRefillResponse(c.Response())
 		return err
 	}
@@ -508,7 +509,7 @@ func (s *Server) VerifyRemoteRefill(c echo.Context, params autogen.VerifyRemoteR
 		logrus.Error(err)
 		autogen.VerifyRemoteRefill500JSONResponse{
 			ErrorCode: autogen.ErrInternalServerError,
-			Message: autogen.MsgInternalServerError,
+			Message:   autogen.MsgInternalServerError,
 		}.VisitVerifyRemoteRefillResponse(c.Response())
 		return err
 	}

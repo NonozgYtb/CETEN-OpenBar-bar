@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image/color"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -179,12 +180,12 @@ type googleUser struct {
 
 func ErrorRedirect(c echo.Context, err string) error {
 	conf := config.GetConfig()
-	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+"/borne/mobile?rt=authError&rm="+err)
+	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+conf.PathConfig.AccountPath+"?rt=authError&rm="+err)
 }
 
 func SuccessRedirect(c echo.Context) error {
 	conf := config.GetConfig()
-	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+"/borne/mobile?rt=authSuccess")
+	return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+conf.PathConfig.AccountPath+"?rt=authSuccess")
 }
 
 // (GET /auth/google/callback)
@@ -393,7 +394,7 @@ func (s *Server) CallbackInpromptu(c echo.Context, params autogen.CallbackParams
 			if err == mongo.ErrNoDocuments {
 				// Redirect to the auth page with an error message
 				conf := config.GetConfig()
-				return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+"/auth?noaccount")
+				return c.Redirect(http.StatusPermanentRedirect, conf.ApiConfig.FrontendBasePath+conf.PathConfig.AuthPath+"?noaccount")
 			}
 			logrus.Error(err)
 			return ErrorRedirect(c, "#017")
@@ -432,13 +433,20 @@ func (s *Server) CallbackInpromptu(c echo.Context, params autogen.CallbackParams
 	}
 
 	r, found := redirectCache.Get(params.State)
-	if !found {
+	urlR, err := url.Parse(r.(string))
+	if !found || err != nil {
+		logrus.Error(err)
+		logrus.Warn(c)
 		return SuccessRedirect(c)
 	}
 	redirectCache.Delete(params.State)
 
 	s.SetCookie(c, account)
-	return c.Redirect(http.StatusPermanentRedirect, r.(string))
+	query := urlR.Query()
+	query.Add("rt", "authSuccess")
+	urlR.RawQuery = query.Encode()
+	logrus.Debugf("Redirecting to %s", urlR.String())
+	return c.Redirect(http.StatusPermanentRedirect, urlR.String())
 }
 
 // (GET /auth/google)
@@ -451,9 +459,9 @@ func (s *Server) ConnectGoogle(c echo.Context, p autogen.ConnectGoogleParams) er
 	// Check if it's a safe redirect (TODO: check if this is correct)
 	switch rel {
 	case "admin":
-		rel = conf.ApiConfig.FrontendBasePath + "/admin"
+		rel = conf.ApiConfig.FrontendBasePath + conf.PathConfig.AdminPath
 	case "client/commande":
-		rel = conf.ApiConfig.FrontendBasePath + "/client/commande"
+		rel = conf.ApiConfig.FrontendBasePath + conf.PathConfig.ClientCommandePath
 	}
 	// Init OAuth2 flow with Google
 	oauth2Config := oauth2.Config{
