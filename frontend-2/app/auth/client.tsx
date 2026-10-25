@@ -3,36 +3,19 @@
 import { cn } from "@/lib/utils"
 
 import { AButton, Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  IconBrandGoogle,
-  IconBrandGoogleFilled,
-  IconNfc,
-  IconX,
-} from "@tabler/icons-react"
-import { useState, useEffect } from "react"
+import { Field, FieldGroup } from "@/components/ui/field"
+import { IconBrandGoogleFilled, IconNfc, IconX } from "@tabler/icons-react"
 import { askNFC, useNFCWS } from "@/components/custom/nfc-dialog"
 import { ReadyState } from "react-use-websocket"
 import { askPin } from "@/components/custom/pin-dialog"
-import { toast } from "@/components/ui/toast"
+import { toastError, ToastId } from "@/components/ui/toast"
 import { useRouter } from "next/navigation"
 import { apis } from "@/components/providers/base-provider"
 
-export function AuthPage({ className, ...props }: React.ComponentProps<"div">) {
-  const [domain, setDomain] = useState<URL | null>(null)
+export function AuthPage({ className }: { className?: string }) {
+  const domain =
+    typeof window === "undefined" ? null : new URL("/me", window.location.href)
   const router = useRouter()
-  useEffect(() => {
-    const url = new URL("/me", window.location.href)
-    setDomain(url)
-  }, [])
   const auth = async (nfcUID: string) => {
     if (!nfcUID) return
     const pin = await askPin()
@@ -51,17 +34,13 @@ export function AuthPage({ className, ...props }: React.ComponentProps<"div">) {
       })
       .catch((err) => {
         console.log("ERR", err)
-        toast.add({
-          id: "auth-error",
-          type: "error",
-          title: "Erreur d'authentification",
-        })
+        toastError(ToastId.Auth_Error, "Erreur d'authentification")
         return null
       })
     if (!res) return
     router.push(`/`)
   }
-  const { nfcWS, panelType } = useNFCWS(({data}) => {
+  const { nfcWS } = useNFCWS(({ data }) => {
     if (!data) return
     try {
       const parsed = JSON.parse(data)
@@ -90,8 +69,7 @@ export function AuthPage({ className, ...props }: React.ComponentProps<"div">) {
                 <div className="flex flex-col items-center gap-1 text-center">
                   <h1 className="text-2xl font-bold">Se connecter à OpenBar</h1>
                   <p className="text-sm text-balance text-muted-foreground">
-                    Si vous n&apos;avez pas de compte, passez d'abord votre
-                    carte à une borne au bar.
+                    {`Si vous n'avez pas de compte, passez d'abord votre carte à une borne au bar.`}
                   </p>
                 </div>
                 <Field>

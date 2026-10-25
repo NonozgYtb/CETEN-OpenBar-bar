@@ -24,5 +24,11 @@ export const formatDate = (date: Date | number) => {
   }).format(date)
 }
 
+export const minmax = (value: number, min?: number, max?: number) => {
+  if (min !== undefined && value < min) return min
+  if (max !== undefined && value > max) return max
+  return value
+}
 
-export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+export const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms))

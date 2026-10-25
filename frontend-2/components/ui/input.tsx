@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
-import { cn } from "@/lib/utils"
+import { cn, minmax } from "@/lib/utils"
 import { cva, VariantProps } from "class-variance-authority"
 
 export const inputVariants = cva(
@@ -8,8 +8,8 @@ export const inputVariants = cva(
   {
     variants: {
       size: {
-        default: "h-9 px-3 py-1 file:h-7 text-base",
-        small: "h-7 px-2 py-1 file:h-6 text-sm",
+        default: "h-9 px-3 py-1 text-base file:h-7",
+        small: "h-7 px-2 py-1 text-sm file:h-6",
       },
     },
     defaultVariants: {
@@ -32,6 +32,69 @@ function Input({
       data-slot="input"
       className={cn(inputVariants({ size }), className)}
       {...props}
+    />
+  )
+}
+
+export function InputFixed({
+  value,
+  setValue,
+  precision = 2,
+  min,
+  max,
+  onBlur,
+  onChange,
+  className,
+  ...props
+}: Omit<
+  React.ComponentProps<typeof Input>,
+  "step" | "type" | "min" | "max" | "value"
+> & {
+  precision?: number
+  setValue?: (value: number) => void
+  value?: number
+  max?: number
+  min?: number
+}) {
+  const [rawValue, setRawValue] = React.useState<string>(
+    value?.toFixed(precision) ?? (0).toFixed(precision)
+  )
+  return (
+    <Input
+      {...props}
+      min={min}
+      max={max}
+      type="number"
+      step={Math.pow(10, -precision)}
+      value={rawValue}
+      onChange={(e) => {
+        setRawValue(
+          e.target.value
+            .replaceAll(",", ".")
+            .replaceAll("e", ".")
+            .replace(/[^0-9.-]/g, "")
+        )
+        onChange?.(e)
+      }}
+      onBlur={(e) => {
+        const v = parseFloat(e.target.value)
+        if (isNaN(v)) {
+          setRawValue(value?.toFixed(precision) ?? (0).toFixed(precision))
+          return onBlur?.(e)
+        }
+        const num = minmax(
+          +Number(
+            e.target.value
+              .replaceAll(",", ".")
+              .replaceAll("e", ".")
+              .replace(/[^0-9.-]/g, "") || 0
+          ).toFixed(precision)
+        )
+        setValue?.(num)
+        setRawValue(num?.toFixed(precision) ?? (0).toFixed(precision))
+        onBlur?.(e)
+      }}
+      className={cn(className, "hide-buttons")}
     />
   )
 }

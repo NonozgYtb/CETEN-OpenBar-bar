@@ -1,7 +1,8 @@
 "use client"
 
 import { TransactionState } from "@/lib/api/api"
-import { apis, customUseQuery, QueryTag } from "./base-provider"
+import { apis, useCustomQuery, QueryTag } from "./base-provider"
+import { keepPreviousData } from "@tanstack/react-query"
 
 export const useAccountTransactions = ({
   page = 1,
@@ -12,10 +13,11 @@ export const useAccountTransactions = ({
   limit?: number
   refetchInterval?: number
 }) =>
-  customUseQuery({
+  useCustomQuery({
     queryKey: [QueryTag.TransactionsGetAccount],
     queryFn: () => apis.transactions.getCurrentAccountTransactions(page, limit),
     refetchInterval,
+    placeholderData: keepPreviousData,
   })
 
 export const useTransactions = ({
@@ -29,7 +31,7 @@ export const useTransactions = ({
   transactionState?: TransactionState
   refetchInterval?: number
 }) =>
-  customUseQuery({
+  useCustomQuery({
     queryKey: [QueryTag.TransactionsGetAll, transactionState],
     queryFn: () =>
       apis.transactions.getTransactions(
@@ -41,4 +43,5 @@ export const useTransactions = ({
         ""
       ),
     refetchInterval,
+    placeholderData: keepPreviousData,
   })

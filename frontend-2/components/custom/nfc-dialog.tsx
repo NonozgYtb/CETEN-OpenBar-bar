@@ -10,12 +10,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useWS } from "@/hooks/use-websocket"
-import { useEffect, useMemo } from "react"
-import { IconCheck, IconLoader2 } from "@tabler/icons-react"
-import { usePanelType } from "../global-provider"
-import { useAccount } from "../providers/accounts-provider"
-import { Item, ItemContent, ItemDescription, ItemTitle } from "../ui/item"
-import { Kbd } from "../ui/kbd"
+import { usePanelType } from "@/components/global-provider"
+import { useAccount } from "@/components/providers/accounts-provider"
+import { Item, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item"
+import { Kbd } from "@/components/ui/kbd"
 
 export type NFCResponse =
   | {
@@ -43,17 +41,19 @@ export const NFCDialog = ({
   noCancel = false,
   customMessage = "Scanner votre carte",
   disableAutofill = false,
-  result = (result: NFCResponse) => {},
+  result = undefined as ((result: NFCResponse) => void) | undefined,
   shown = true,
 }) => {
-  const { nfcWS, panelType } = useNFCWS(({ data }) => {
+  const { panelType } = useNFCWS(({ data }) => {
     if (!data) return
     try {
       if ("uid" in JSON.parse(data))
-        result({ uid: JSON.parse(data).uid, ok: true })
-    } catch (e) {}
+        result?.({ uid: JSON.parse(data).uid, ok: true })
+    } catch (e) {
+      void e
+    }
   })
-  const end = () => result({ ok: false, uid: null })
+  const end = () => result?.({ ok: false, uid: null })
   const account = useAccount()
   const hasFilledCardId = !!(
     !disableAutofill &&
@@ -73,14 +73,14 @@ export const NFCDialog = ({
         </DialogHeader>
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="grid size-64 place-items-center rounded-lg bg-background bg-contain bg-center p-4">
-            <span className="text-lg">En attente d'un scan NFC</span>
+            <span className="text-lg">{"En attente d'un scan NFC"}</span>
           </div>
           {hasFilledCardId && (
             <Item
               variant="outline"
               className="cursor-pointer hover:bg-input/30"
               onClick={() =>
-                result({
+                result?.({
                   uid: String(account?.data?.account?.card_id),
                   ok: true,
                 })
@@ -100,27 +100,29 @@ export const NFCDialog = ({
             </Item>
           )}
         </div>
-        <DialogFooter>
-          {hasFilledCardId && (
-            <DialogClose
-              onClick={() =>
-                result({
-                  uid: String(account?.data?.account?.card_id),
-                  ok: true,
-                })
-              }
-              variant={"default"}
-              buttonRender
-            >
-              Utiliser ma carte
-            </DialogClose>
-          )}
-          {!noCancel && (
-            <DialogClose onClick={end} variant={"destructive"} buttonRender>
-              Annuler
-            </DialogClose>
-          )}
-        </DialogFooter>
+        {(hasFilledCardId || !noCancel) && (
+          <DialogFooter>
+            {hasFilledCardId && (
+              <DialogClose
+                onClick={() =>
+                  result?.({
+                    uid: String(account?.data?.account?.card_id),
+                    ok: true,
+                  })
+                }
+                variant={"default"}
+                buttonRender
+              >
+                Utiliser ma carte
+              </DialogClose>
+            )}
+            {!noCancel && (
+              <DialogClose onClick={end} variant={"destructive"} buttonRender>
+                Annuler
+              </DialogClose>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )

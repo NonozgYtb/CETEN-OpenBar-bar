@@ -11,12 +11,7 @@ import {
   getFullName,
   useAccount,
 } from "@/components/providers/accounts-provider"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  GenericAvatar,
-} from "@/components/ui/avatar"
+import { GenericAvatar } from "@/components/ui/avatar"
 import { formatPrice } from "@/lib/utils"
 import { PriceBadge } from "@/components/layout/app-header"
 import { IconStarFilled } from "@tabler/icons-react"

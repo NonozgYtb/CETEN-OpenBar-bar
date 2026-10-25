@@ -1,8 +1,5 @@
 "use client"
 
-import { AppSidebar } from "@/components/layout/app-sidebar"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -35,15 +32,13 @@ const PanelTypeContext = React.createContext<{
 }>({ value: "panel", setValue: () => {} })
 
 export const usePanelType = () => React.useContext(PanelTypeContext).value
-export const _useSetPanelType = () => React.useContext(PanelTypeContext)
+export const useSetPanelType_DO_NOT_USE = () =>
+  React.useContext(PanelTypeContext)
 
 export function GlobalProvider({
   children,
-  noSidebar = false,
   ...props
-}: React.ComponentProps<typeof NextThemesProvider> & {
-  noSidebar?: boolean
-}) {
+}: React.ComponentProps<typeof NextThemesProvider>) {
   const [panelType, setPanelType] = React.useState<"borne" | "panel">("panel")
   React.useEffect(() => {
     if (typeof window == "undefined") return

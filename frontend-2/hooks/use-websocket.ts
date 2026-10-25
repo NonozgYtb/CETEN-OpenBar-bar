@@ -1,5 +1,5 @@
-import { toast, ToastType } from "@/components/ui/toast"
-import { useCallback, useEffect, useState } from "react"
+import { toastError, ToastId } from "@/components/ui/toast"
+import { useCallback } from "react"
 import useWebSocket from "react-use-websocket"
 
 export const useWS = (
@@ -17,17 +17,16 @@ export const useWS = (
       shouldReconnect,
       reconnectAttempts,
       reconnectInterval: (attemptNumber) =>
-        Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
+        Math.min(Math.pow(2, attemptNumber) * 1000, 30000),
       onMessage,
       onError: () => {
         if (disableError) return
-        toast.add({
-          id: `ws-err-${url}`,
-          type: ToastType.ERROR,
-          title: "Erreur WebSocket",
-          description:
-            "Une erreur est survenue lors de la connexion au socket.",
-        })
+        toastError(
+          ToastId.Custom,
+          "Erreur WebSocket",
+          "Une erreur est survenue lors de la connexion au socket.",
+          `ws-err-${url}`
+        )
       },
     },
     shouldConnect

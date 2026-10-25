@@ -12,7 +12,6 @@ import {
 import { Transaction, TransactionState } from "@/lib/api"
 import { apis, QueryTag, toUrl } from "@/components/providers/base-provider"
 import { GenericAvatar } from "@/components/ui/avatar"
-import { getFullName } from "@/components/providers/accounts-provider"
 import { formatDate, formatPrice } from "@/lib/utils"
 import {
   IconChecks,
@@ -25,15 +24,15 @@ import {
   TransactionStateBadge,
   TransactionSupportBadge,
 } from "@/components/pages/commandes/transaction-badge"
-import { toast, ToastType } from "@/components/ui/toast"
+import { toastError, ToastId, toastSuccess } from "@/components/ui/toast"
 import { useQueryClient } from "@tanstack/react-query"
 import { Tooltiped } from "@/components/ui/tooltip"
 
-const TransactionDialog = createCallable<{ transaction: Transaction }, {}>(
+const TransactionDialog = createCallable<{ transaction: Transaction }, void>(
   ({ call, transaction }) => {
     const queryClient = useQueryClient()
 
-    const end = () => call.end({})
+    const end = () => call.end()
     const actionConfig = {
       cancel: {
         type: TransactionState.TransactionCanceled,
@@ -74,26 +73,26 @@ const TransactionDialog = createCallable<{ transaction: Transaction }, {}>(
       ;(action === "wait" ? changeTransaction() : changeItems())
         .then(() => (action === "wait" ? changeItems() : changeTransaction()))
         .then(() =>
-          toast.add({
-            title: `Transaction ${actionConfig[action].adjective}`,
-            description: `La transaction a été ${actionConfig[action].adjective} avec succès.`,
-            id: `transaction-${transaction.id}-${action}`,
-            type: ToastType.SUCCESS,
-          })
+          toastSuccess(
+            ToastId.Custom,
+            `Transaction ${actionConfig[action].adjective}`,
+            `La transaction a été ${actionConfig[action].adjective} avec succès.`,
+            `transaction-${transaction.id}-${action}`
+          )
         )
         .catch(() =>
-          toast.add({
-            title: `Erreur lors de la ${actionConfig[action].name} de la transaction`,
-            description: `Une erreur est survenue lors de la ${actionConfig[action].name} de la transaction.`,
-            id: `transaction-${transaction.id}-${action}-error`,
-            type: ToastType.ERROR,
-          })
+          toastError(
+            ToastId.Custom,
+            `Erreur lors de la ${actionConfig[action].name} de la transaction`,
+            `Une erreur est survenue lors de la ${actionConfig[action].name} de la transaction.`,
+            `transaction-${transaction.id}-${action}-error`
+          )
         )
         .finally(() => {
           queryClient.invalidateQueries({
             queryKey: [QueryTag.TransactionsGetAll],
           })
-          call.end({})
+          call.end()
         })
     }
     return (
@@ -216,11 +215,11 @@ const TransactionDialog = createCallable<{ transaction: Transaction }, {}>(
                   transaction.state == TransactionState.TransactionFinished ||
                   transaction.state == TransactionState.TransactionCanceled
                 }
-                onClick={() => {
+                onClick={() =>
                   transaction.state == TransactionState.TransactionFinished ||
-                    transaction.state == TransactionState.TransactionCanceled ||
-                    endWithAction("finish")
-                }}
+                  transaction.state == TransactionState.TransactionCanceled ||
+                  endWithAction("finish")
+                }
                 variant={"default"}
                 buttonRender
                 className="flex-1"

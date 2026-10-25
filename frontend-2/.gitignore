@@ -40,3 +40,4 @@ public/**/_file
 certs
 scripts
 !scripts/*.keep.*
+todo.md

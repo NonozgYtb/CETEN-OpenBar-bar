@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState } from "react"
-import { useAccount } from "../providers/accounts-provider"
+import { useAccount } from "@/components/providers/accounts-provider"
 
 type Commande = {
   pictureUri: string
@@ -13,7 +13,7 @@ type Commande = {
   picked_categories_items?: {
     item_id: string
     amount: number
-  }[] // TODO : remove this because unusable
+  }[]
 }
 
 const CommandeContext = createContext<{

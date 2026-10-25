@@ -9,10 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "../ui/button"
-import { BaseSyntheticEvent, useEffect, useRef, useState } from "react"
-import { Input } from "../ui/input"
-import { usePanelType } from "../global-provider"
+import { Button } from "@/components/ui/button"
+import { BaseSyntheticEvent, useEffect, useState } from "react"
+import { Input } from "@/components/ui/input"
+import { usePanelType } from "@/components/global-provider"
 
 export type PinResponse =
   | {
@@ -38,7 +38,7 @@ const PinCall = createCallable<{ customMessage?: string }, PinResponse>(
       })
     }
     useEffect(() => {
-      if (call.ended) return 
+      if (call.ended) return
       const elem = document.getElementById("pin")
       console.log(elem)
       if (elem) {

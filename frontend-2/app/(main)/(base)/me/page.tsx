@@ -1,4 +1,3 @@
-import { InsetLayout } from "@/components/layout/inset-layout"
 import MePage from "./client"
 
 export const metadata = {

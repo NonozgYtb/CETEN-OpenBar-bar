@@ -1,17 +1,6 @@
 "use client"
 
 import * as React from "react"
-import {
-  IconCamera,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconHelp,
-  IconReport,
-  IconSearch,
-  IconSettings,
-} from "@tabler/icons-react"
 
 import { NavMain } from "@/components/layout/nav-main"
 import {
@@ -22,12 +11,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { _useSetPanelType } from "../global-provider"
-import { useCategoryList } from "../providers/items-provider"
+import { useSetPanelType_DO_NOT_USE } from "@/components/global-provider"
+import { useCategoryList } from "@/components/providers/items-provider"
 import { Route } from "next"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const setV = _useSetPanelType()
+  const setV = useSetPanelType_DO_NOT_USE()
   const { data } = useCategoryList()
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -54,7 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items={
             data?.map((category) => ({
               title: category.name,
-              url:`/category/${category.id}` as Route,
+              url: `/category/${category.id}` as Route,
               icon: category.picture_uri,
             })) || []
           }

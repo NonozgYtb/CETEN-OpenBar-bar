@@ -40,7 +40,7 @@ export const ComptoirLayout = ({ children }: { children: React.ReactNode }) => {
           .then((e) => {
             if (e?.data.account) setLogged(true)
           })
-          .catch((e) => void 0)
+          .catch(() => void 0)
       }}
     />
   )

@@ -1,18 +1,15 @@
 "use client"
 
-import { ItemState } from "@/lib/api"
-import { apis, customUseQuery, QueryTag } from "./base-provider"
-import { redirect, useRouter } from "next/navigation"
-import { AxiosPromise } from "axios"
+import { apis, useCustomQuery, QueryTag } from "./base-provider"
 
 export const useRefills = () =>
-  customUseQuery({
+  useCustomQuery({
     queryKey: [QueryTag.Refills],
     queryFn: () => apis.refills.getRefills(1),
   })
 
 export const usePendingRefills = () =>
-  customUseQuery({
+  useCustomQuery({
     queryKey: [QueryTag.RemoteRefills],
     queryFn: () => apis.refills.getPendingRemoteRefills(),
   })

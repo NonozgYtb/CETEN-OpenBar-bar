@@ -7,10 +7,10 @@ import {
   useEffect,
   useState,
 } from "react"
-import { toast, ToastType } from "../ui/toast"
-import { redirect, useRouter } from "next/navigation"
+import { toastError, ToastId, toastSuccess } from "@/components/ui/toast"
+import { useRouter } from "next/navigation"
 import { Route } from "next"
-import { apis, QueryTag } from "../providers/base-provider"
+import { apis, QueryTag } from "@/components/providers/base-provider"
 import {
   Dialog,
   DialogClose,
@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
+} from "@/components/ui/dialog"
 import { useQueryClient } from "@tanstack/react-query"
 
 export enum ApiResultCode {
@@ -81,35 +81,27 @@ export const ApiResultHandler = ({ children }: { children: ReactNode }) => {
 
       if (noAccount) {
         setCode(ApiResultCode.AUTH_NO_ACCOUNT)
-        toast.add({
-          id: "api-result",
-          type: ToastType.ERROR,
-          title: "Aucun compte associé",
-          description:
-            "Aucun compte n'est associé à votre compte Google. Veuillez créer un compte à une borne et connecter votre compte TN.net !",
-        })
+        toastError(
+          ToastId.Api_Result,
+          "Aucun compte associé",
+          "Aucun compte n'est associé à votre compte Google. Veuillez créer un compte à une borne et connecter votre compte TN.net !"
+        )
         return
       }
       if (rt === "authError" && rm) {
         setCode(ApiResultCode.AUTH_ERROR)
         setErrMessage(rm)
-        toast.add({
-          id: "api-result",
-          type: ToastType.ERROR,
-          title: "Erreur d'authentification",
-          description: rm,
-        })
+        toastError(ToastId.Api_Result, "Erreur d'authentification", rm)
         return
       }
       if (rt === "authSuccess") {
         setCode(ApiResultCode.AUTH_SUCCESS)
         setErrMessage(null)
-        toast.add({
-          id: "api-result",
-          type: ToastType.SUCCESS,
-          title: "Authentification réussie",
-          description: "Vous êtes maintenant connecté !",
-        })
+        toastSuccess(
+          ToastId.Api_Result,
+          "Authentification réussie",
+          "Vous êtes maintenant connecté !"
+        )
       }
     }
 
@@ -121,7 +113,6 @@ export const ApiResultHandler = ({ children }: { children: ReactNode }) => {
       )
       const error = urlParams.get("error")
       const code = urlParams.get("code")
-      const orderId = urlParams.get("orderId")
       if (!checkoutIntentId) return
       changeURL = true
       url.searchParams.delete("checkoutIntentId")
@@ -133,12 +124,7 @@ export const ApiResultHandler = ({ children }: { children: ReactNode }) => {
         queryClient.invalidateQueries({ queryKey: [QueryTag.RemoteRefills] })
       }, 500)
       if (error) {
-        toast.add({
-          id: "hello-asso-result",
-          type: ToastType.ERROR,
-          title: "Erreur de paiement",
-          description: error,
-        })
+        toastError(ToastId.HelloAsso_Result, "Erreur de paiement", error)
         setHelloAssoResult({
           checkoutIntentId,
           isSuccess: false,
@@ -149,20 +135,25 @@ export const ApiResultHandler = ({ children }: { children: ReactNode }) => {
         try {
           apis.refills
             .selfValidateRemoteRefill(checkoutIntentId)
-            .then((res) =>
+            .then(() => {
               setHelloAssoResult({
                 checkoutIntentId,
                 isSuccess: true,
               })
-            )
-            .catch((err) => void 0)
+              toastSuccess(
+                ToastId.HelloAsso_Result,
+                "Rechargement validé",
+                "Votre rechargement a été validé avec succès. Vous pouvez consulter vos rechargements dans votre profil."
+              )
+            })
+            .catch(() => void 0)
         } catch (e) {
-          toast.add({
-            id: "hello-asso-result",
-            type: ToastType.ERROR,
-            title: "Erreur de paiement",
-            description: "L'identifiant de paiement est invalide.",
-          })
+          void e
+          toastError(
+            ToastId.HelloAsso_Result,
+            "Erreur de paiement",
+            "L'identifiant de paiement est invalide."
+          )
           return
         }
       }
@@ -170,15 +161,13 @@ export const ApiResultHandler = ({ children }: { children: ReactNode }) => {
 
     /* ------------ END ------------- */
 
-    !(async () => {
-      await handleAuthApi(newUrl)
-      await handleHelloassoCallback(newUrl)
-
-      setSent(true)
-
-      if (changeURL) router.replace(newUrl.toString() as Route)
-    })()
-  }, [])
+    handleAuthApi(newUrl)
+      .then(() => handleHelloassoCallback(newUrl))
+      .then(() => {
+        setSent(true)
+        if (changeURL) router.replace(newUrl.toString() as Route)
+      })
+  }, [queryClient, router, sent])
 
   return (
     <ApiResultContext.Provider value={{ code, errMessage }}>

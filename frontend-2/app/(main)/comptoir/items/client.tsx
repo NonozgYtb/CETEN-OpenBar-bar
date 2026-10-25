@@ -2,7 +2,6 @@
 
 import { InsetLayout } from "@/components/layout/inset-layout"
 import { StockTableContent } from "@/components/pages/comptoir/stock/stock-table"
-import { TransactionList } from "@/components/pages/comptoir/transactions/transaction-list"
 
 export const ComptoirStock = () => {
   return (

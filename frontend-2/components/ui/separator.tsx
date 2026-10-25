@@ -23,7 +23,6 @@ function Separator({
 
 function SeparatorWithText({
   className,
-  orientation = "horizontal",
   children,
   ...props
 }: SeparatorPrimitive.Props & { children: React.ReactNode }) {

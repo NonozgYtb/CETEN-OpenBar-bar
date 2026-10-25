@@ -7,14 +7,30 @@ import { cn } from "cn"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { minmax } from "@/lib/utils"
 
-function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+const inputGroupVariants = cva(
+"group/input-group relative flex w-full min-w-0 items-center rounded-4xl border border-transparent bg-input/50 transition-[color,box-shadow,background-color] outline-none in-data-[slot=combobox-content]:focus-within:border-inherit in-data-[slot=combobox-content]:focus-within:ring-0 has-data-[align=block-end]:rounded-3xl has-data-[align=block-start]:rounded-3xl has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/30 has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[textarea]:rounded-2xl has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>textarea]:h-auto dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5",
+  {
+    variants: {
+      size: {
+        small: "h-7",
+        medium: "h-9",
+      },
+    },
+    defaultVariants: {
+      size: "medium",
+    },
+  }
+)
+
+function InputGroup({ className, size="medium",...props }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupVariants>) {
   return (
     <div
       data-slot="input-group"
       role="group"
       className={cn(
-        "group/input-group relative flex h-9 w-full min-w-0 items-center rounded-4xl border border-transparent bg-input/50 transition-[color,box-shadow,background-color] outline-none in-data-[slot=combobox-content]:focus-within:border-inherit in-data-[slot=combobox-content]:focus-within:ring-0 has-data-[align=block-end]:rounded-3xl has-data-[align=block-start]:rounded-3xl has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/30 has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[textarea]:rounded-2xl has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>textarea]:h-auto dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5",
+        inputGroupVariants({ size }),
         className
       )}
       {...props}
@@ -130,31 +146,27 @@ function InputGroupInput({
 }
 
 export function InputGroupFixed({
-  className,
   value,
   setValue,
   precision = 2,
   min,
   max,
+  onBlur,
+  onChange,
   ...props
 }: Omit<
   React.ComponentProps<typeof InputGroupInput>,
-  "step" | "onChange" | "onBlur" | "type" | "min" | "max"
+  "step" | "type" | "min" | "max" | "value"
 > & {
   precision?: number
-  setValue?: (value: string) => void
+  setValue?: (value: number) => void
+  value?: number
   max?: number
   min?: number
 }) {
-  const minmax = (value: number) => {
-    if (min !== undefined && value < min) {
-      return min
-    }
-    if (max !== undefined && value > max) {
-      return max
-    }
-    return value
-  }
+  const [rawValue, setRawValue] = React.useState<string>(
+    value?.toFixed(precision) ?? (0).toFixed(precision)
+  )
   return (
     <InputGroupInput
       {...props}
@@ -162,29 +174,34 @@ export function InputGroupFixed({
       max={max}
       type="number"
       step={Math.pow(10, -precision)}
-      value={value ?? (0).toFixed(precision)}
-      onChange={(e) =>
-        setValue?.(
+      value={rawValue}
+      onChange={(e) => {
+        setRawValue(
           e.target.value
             .replaceAll(",", ".")
             .replaceAll("e", ".")
             .replace(/[^0-9.-]/g, "")
         )
-      }
-      onBlur={(e) =>
-        setValue?.(
-          minmax(
-            Math.floor(
-              Number(
-                e.target.value
-                  .replaceAll(",", ".")
-                  .replaceAll("e", ".")
-                  .replace(/[^0-9.-]/g, "") || 0
-              ) * Math.pow(10, precision)
-            ) / Math.pow(10, precision)
-          )!.toFixed(precision)
+        onChange?.(e)
+      }}
+      onBlur={(e) => {
+        const v = parseFloat(e.target.value)
+        if (isNaN(v)) {
+          setRawValue(value?.toFixed(precision) ?? (0).toFixed(precision))
+          return onBlur?.(e)
+        }
+        const num = minmax(
+          +Number(
+            e.target.value
+              .replaceAll(",", ".")
+              .replaceAll("e", ".")
+              .replace(/[^0-9.-]/g, "") || 0
+          ).toFixed(precision)
         )
-      }
+        setValue?.(num)
+        setRawValue(num?.toFixed(precision) ?? (0).toFixed(precision))
+        onBlur?.(e)
+      }}
     />
   )
 }

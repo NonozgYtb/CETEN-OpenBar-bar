@@ -2,20 +2,12 @@
 
 import * as React from "react"
 import {
-  IconCamera,
   IconCarFan,
   IconCashBanknote,
   IconDatabase,
   IconDesk,
   IconDoor,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconHelp,
   IconReceipt,
-  IconReport,
-  IconSearch,
-  IconSettings,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -27,12 +19,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { _useSetPanelType } from "../global-provider"
-import { useCategoryList } from "../providers/items-provider"
-import { NavSecondary } from "./nav-secondary"
-import { askPin } from "../custom/pin-dialog"
-import { toast, ToastType } from "../ui/toast"
-import { askNFC } from "../custom/nfc-dialog"
+import { useSetPanelType_DO_NOT_USE } from "@/components/global-provider"
+import { askPin } from "@/components/custom/pin-dialog"
+import { toastError, ToastId, toastSuccess, toastWarning } from "@/components/ui/toast"
+import { askNFC } from "@/components/custom/nfc-dialog"
 
 enum Action {
   PORTE = "porte",
@@ -58,26 +48,22 @@ const labels: Record<Action, { valid: string; error: string }> = {
 export function ComptoirSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const setV = _useSetPanelType()
+  const setV = useSetPanelType_DO_NOT_USE()
   const sendAction = async (action: Action) => {
     const nfcUid = await askNFC()
     if (!nfcUid.ok)
-      return toast.add({
-        type: ToastType.WARNING,
-        id: "action-nfc-cancelled",
-        title: "Action annulée",
-        description:
-          "Vous devez scanner votre carte pour effectuer cette action.",
-      })
+      return toastWarning(
+        ToastId.Auth_NFCCancelled,
+        "Action annulée",
+        "Vous devez scanner votre carte pour continuer."
+      )
     const pin = await askPin()
     if (!pin.ok)
-      return toast.add({
-        type: ToastType.WARNING,
-        id: "action-pin-cancelled",
-        title: "Action annulée",
-        description:
-          "Vous devez entrer votre code PIN pour effectuer cette action.",
-      })
+      return toastWarning(
+        ToastId.Auth_PinCancelled,
+        "Action annulée",
+        "Vous devez entrer votre code PIN pour continuer."
+      )
     fetch(new URL(`/${action}`, process.env.NEXT_PUBLIC_LOCAL_API), {
       method: "POST",
       headers: {
@@ -94,20 +80,22 @@ export function ComptoirSidebar({
       })
       .then(async (res) => {
         if ("success" in res && res.success)
-          toast.add({
-            type: ToastType.SUCCESS,
-            id: `action-success-${action}`,
-            title: labels[action].valid,
-          })
+          return toastSuccess(
+            ToastId.Custom,
+            `Action ${action} réussie`,
+            labels[action].valid,
+            `action-success-${action}`
+          )
         else throw new Error("Action failed")
       })
       .catch((err) => {
         console.error(err)
-        toast.add({
-          type: ToastType.ERROR,
-          id: `action-error-${action}`,
-          title: labels[action].error,
-        })
+        toastError(
+          ToastId.Custom,
+          `Erreur lors de l'action ${action}`,
+          labels[action].error,
+          `action-error-${action}`
+        )
       })
   }
   return (
@@ -146,7 +134,7 @@ export function ComptoirSidebar({
               title: "Stock / Produits",
               url: "/comptoir/items",
               icon: IconDatabase,
-            }
+            },
           ]}
         />
         <NavMain

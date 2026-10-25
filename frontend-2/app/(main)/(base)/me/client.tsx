@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button"
 import { PendingRefills } from "@/components/pages/account/pending-refills"
 import AccountCard from "@/components/pages/account/account-card"
 import { RefillCard } from "@/components/pages/account/refill-card"
-import { askPin, PinCall, PinResponse } from "@/components/custom/pin-dialog"
-import { toast, ToastType } from "@/components/ui/toast"
+import { askPin } from "@/components/custom/pin-dialog"
+import {
+  toastError,
+  ToastId,
+  toastSuccess,
+  toastWarning,
+} from "@/components/ui/toast"
 import { apis } from "@/components/providers/base-provider"
 import { QRCall } from "@/components/custom/qr-dialog"
 
@@ -19,11 +24,10 @@ export default function MePage() {
     const confirmPin = await askPin("Confirmez votre NOUVEAU code PIN")
     if (!confirmPin.ok) return
     if (newPin.pin !== confirmPin.pin)
-      return toast.add({
-        type: ToastType.WARNING,
-        id: "pin-mismatch",
-        title: "Les codes PIN ne correspondent pas",
-      })
+      return toastWarning(
+        ToastId.Auth_PinMismatch,
+        "Les codes PIN ne correspondent pas"
+      )
 
     apis.accounts
       .patchAccountPin({
@@ -32,20 +36,18 @@ export default function MePage() {
       })
       .then((e) => {
         if (!e.data.account) throw new Error("No account returned")
-        toast.add({
-          type: ToastType.SUCCESS,
-          id: "pin-change-success",
-          title: "Code PIN changé avec succès",
-        })
+        return toastSuccess(
+          ToastId.Auth_PinChangeSuccess,
+          "Code PIN changé avec succès"
+        )
       })
       .catch((err) => {
         console.error(err)
-        toast.add({
-          type: ToastType.ERROR,
-          id: "pin-change-error",
-          title: "Erreur lors du changement de code PIN",
-          description: err.response?.data?.message || "Une erreur est survenue",
-        })
+        toastError(
+          ToastId.Auth_PinChangeError,
+          "Erreur lors du changement de code PIN",
+          err.response?.data?.message || "Une erreur est survenue"
+        )
       })
   }
   const askAccountRelink = async () => {

@@ -79,7 +79,7 @@ function TabsSimplifiedTrigger({
       className={cn(
         "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-2 rounded-full border border-transparent! px-3 py-1 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all borne:h-auto",
         "hover:text-foreground",
-        "data-[active]:border-foreground! data-[active]:text-foreground!",
+        "data-active:border-foreground! data-active:text-foreground!",
         "borne:px-4 borne:py-2",
         className
       )}

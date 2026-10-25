@@ -9,7 +9,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { TypoH4 } from "@/components/layout/typo"
-import { RemoteRefill, RemoteRefillState } from "@/lib/api"
+import { RemoteRefillState } from "@/lib/api"
 import { usePendingRefills } from "@/components/providers/refills-provider"
 
 const remoteRefillStateConfig: Record<

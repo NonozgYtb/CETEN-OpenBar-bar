@@ -1,24 +1,18 @@
 "use client"
 
-import { apis, customUseQuery, QueryTag } from "./base-provider"
-import { useRouter } from "next/navigation"
+import { apis, useCustomQuery, QueryTag } from "./base-provider"
 
-export const useAccount = () => {
-  const router = useRouter()
-
-  const data = customUseQuery({
+export const useAccount = () =>
+  useCustomQuery({
     queryKey: [QueryTag.Account],
     queryFn: () =>
       apis.accounts.getAccount().catch((error) => {
-        if (error.response?.status === 401) {
-          router.push("/auth")
-        }
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        if (error.response?.status === 401) window.location.href = "/auth"
+
         return Promise.reject(error)
       }),
   })
-
-  return data
-}
 
 export const getFullName = (account?: {
   first_name: string

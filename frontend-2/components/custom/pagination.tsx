@@ -1,14 +1,14 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Input } from "../ui/input"
+import { Input } from "@/components/ui/input"
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from "../ui/pagination"
+} from "@/components/ui/pagination"
 import { cn } from "@/lib/utils"
 
 export const PaginationComponent = ({

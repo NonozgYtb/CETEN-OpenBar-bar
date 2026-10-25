@@ -12,10 +12,10 @@ import {
 import { useWS } from "@/hooks/use-websocket"
 import { useEffect, useMemo, useState } from "react"
 import { ReadyState } from "react-use-websocket"
-import { apis } from "../providers/base-provider"
-import { toast, ToastType } from "../ui/toast"
+import { apis } from "@/components/providers/base-provider"
+import { toastError, ToastId } from "@/components/ui/toast"
 import { IconCheck, IconLoader2 } from "@tabler/icons-react"
-import { Badge } from "../ui/badge"
+import { Badge, BadgeVariant } from "@/components/ui/badge"
 
 enum QRState {
   WAITING = "waiting",
@@ -24,7 +24,7 @@ enum QRState {
   ERROR = "error",
 }
 
-const QRCall = createCallable<{ card_pin: string }, {}>(
+const QRCall = createCallable<{ card_pin: string }, void>(
   ({ call, card_pin }) => {
     const qrWS = useWS(
       `${process.env.NEXT_PUBLIC_LOCAL_API?.replace(/^http/, "ws")}/account/qr`
@@ -38,7 +38,7 @@ const QRCall = createCallable<{ card_pin: string }, {}>(
       return QRState.ERROR
     }, [qrWS.lastMessage])
     const state = useMemo(() => {
-      const getBadgeConfig = () => {
+      const getBadgeConfig = (): { variant: BadgeVariant; label: string } => {
         switch (qrWS.readyState) {
           case ReadyState.CONNECTING:
             return { variant: "outline", label: "Connexion..." }
@@ -67,14 +67,14 @@ const QRCall = createCallable<{ card_pin: string }, {}>(
                   label: "Erreur lors de la connexion",
                 }
             }
-            break
+        }
+        return {
+          variant: "outline",
+          label: "Statut inconnu",
         }
       }
-      const { variant, label } = getBadgeConfig() || {
-        variant: "outline",
-        label: "Statut inconnu",
-      }
-      return <Badge variant={variant as any}>{label}</Badge>
+      const { variant, label } = getBadgeConfig()
+      return <Badge variant={variant}>{label}</Badge>
     }, [qrWS.readyState, qrContent, lastMessage])
     useEffect(() => {
       if (qrWS.readyState === ReadyState.OPEN) {
@@ -85,26 +85,22 @@ const QRCall = createCallable<{ card_pin: string }, {}>(
             setQrContent(e.data)
           })
           .catch((err) => {
-            call.end({})
-            toast.add({
-              type: ToastType.ERROR,
-              id: "qr-error",
-              title: "Erreur : Mauvais code PIN ou erreur de génération QRCode",
-              description:
-                err.response?.data?.message || "Une erreur est survenue",
-            })
+            call.end()
+            toastError(
+              ToastId.Auth_QRError,
+              "Erreur : Mauvais code PIN ou erreur de génération QRCode",
+              err.response?.data?.message || "Une erreur est survenue"
+            )
           })
       }
-      if (lastMessage === QRState.CONNECTED) setTimeout(end, 2000)
-    }, [qrWS.readyState, lastMessage])
-    const end = () => {
-      call.end({})
-    }
+      if (lastMessage === QRState.CONNECTED) setTimeout(() => call.end(), 2000)
+    }, [qrWS.readyState, lastMessage, card_pin, call])
+
     return (
-      <Dialog open={!call.ended} defaultOpen onOpenChange={end}>
+      <Dialog open={!call.ended} defaultOpen onOpenChange={() => call.end()}>
         <DialogContent
           overlayProps={{
-            onClick: end,
+            onClick: () => call.end(),
           }}
         >
           <DialogHeader>
@@ -130,7 +126,11 @@ const QRCall = createCallable<{ card_pin: string }, {}>(
             {state}
           </div>
           <DialogFooter>
-            <DialogClose onClick={end} variant={"destructive"} buttonRender>
+            <DialogClose
+              onClick={() => call.end()}
+              variant={"destructive"}
+              buttonRender
+            >
               Annuler
             </DialogClose>
           </DialogFooter>

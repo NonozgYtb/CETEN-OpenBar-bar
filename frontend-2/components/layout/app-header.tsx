@@ -23,19 +23,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
-import { Badge, BadgeVariant } from "../ui/badge"
-import { getFullName, useAccount } from "../providers/accounts-provider"
-import { AccountPriceRole } from "../../lib/api/api"
-import { apis } from "../providers/base-provider"
+import { Badge, BadgeVariant } from "@/components/ui/badge"
+import { getFullName, useAccount } from "@/components/providers/accounts-provider"
+import { AccountPriceRole } from "@/lib/api/api"
+import { apis } from "@/components/providers/base-provider"
 import { redirect, useRouter } from "next/navigation"
 import Link from "next/link"
 import { formatPrice } from "@/lib/utils"
-import { Button, LinkButton } from "../ui/button"
-import { usePanelType } from "../global-provider"
+import { Button, LinkButton } from "@/components/ui/button"
+import { usePanelType } from "@/components/global-provider"
 import { MouseEvent } from "react"
-import { askNFC } from "../custom/nfc-dialog"
-import { toast } from "../ui/toast"
-import { askPin } from "../custom/pin-dialog"
+import { askNFC } from "@/components/custom/nfc-dialog"
+import { toastError, ToastId, toastWarning } from "@/components/ui/toast"
+import { askPin } from "@/components/custom/pin-dialog"
+import { Route } from "next"
 
 export const PriceBadge = ({
   price_role,
@@ -101,20 +102,18 @@ export function AppHeader({ pageTitle }: { pageTitle?: string }) {
       askNFC().then(async (nfc) => {
         console.log(nfc)
         if (!nfc.ok)
-          return toast.add({
-            type: "warning",
-            id: "nfc-cancelled",
-            title: "Action annulée",
-            description: "Vous devez scanner votre carte pour continuer.",
-          })
+          return toastWarning(
+            ToastId.Auth_NFCCancelled,
+            "Action annulée",
+            "Vous devez scanner votre carte pour continuer."
+          )
         const pin = await askPin()
         if (!pin.ok)
-          return toast.add({
-            type: "warning",
-            id: "pin-cancelled",
-            title: "Action annulée",
-            description: "Vous devez entrer votre code PIN pour continuer.",
-          })
+          return toastWarning(
+            ToastId.Auth_PinCancelled,
+            "Action annulée",
+            "Vous devez entrer votre code PIN pour continuer."
+          )
 
         const res = await apis.auth
           .connectCard(
@@ -123,14 +122,13 @@ export function AppHeader({ pageTitle }: { pageTitle?: string }) {
           )
           .catch(() => null)
 
-        if (res && res.data.account) router.push(props.href as any)
+        if (res && res.data.account) router.push(props.href as Route)
         else
-          toast.add({
-            type: "error",
-            id: "auth-error",
-            title: "Erreur d'authentification",
-            description: "Votre carte ou votre code PIN est incorrect.",
-          })
+          toastError(
+            ToastId.Auth_Error,
+            "Erreur d'authentification",
+            "Votre carte ou votre code PIN est incorrect."
+          )
       })
     }
 
@@ -161,18 +159,24 @@ export function AppHeader({ pageTitle }: { pageTitle?: string }) {
               key={item.href}
               href={item.href}
               variant="default"
-              className="hidden gap-1 px-2 py-1 text-sm md:flex"
+              className="hidden text-sm md:flex"
             >
-              <item.icon className="size-4 borne:size-8" />
+              <item.icon
+                className="size-4 borne:size-8"
+                data-icon="inline-start"
+              />
               <span className="borne:hidden">{item.label}</span>
             </AskButton>
           ))}
           <Button
             onClick={() => apis.auth.logout().then(() => redirect("/auth"))}
-            className="hidden gap-1 px-2 py-1 text-sm borne:md:flex"
+            className="hidden text-sm borne:md:flex"
             variant="destructive"
           >
-            <IconLogout className="size-4 borne:size-8" />
+            <IconLogout
+              className="size-4 borne:size-8"
+              data-icon="inline-start"
+            />
             <span className="borne:hidden">Se déconnecter</span>
           </Button>
           {user && (
@@ -273,7 +277,10 @@ export function AppHeader({ pageTitle }: { pageTitle?: string }) {
                       variant="default"
                       className="px-2 py-1 text-sm"
                     >
-                      <item.icon className="size-4 borne:size-8" />
+                      <item.icon
+                        data-icon="inline-start"
+                        className="size-4 borne:size-8"
+                      />
                       <span>{item.label}</span>
                     </AskButton>
                   ))}

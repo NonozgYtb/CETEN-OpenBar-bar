@@ -2,21 +2,12 @@
 
 import { TransactionDialog } from "@/components/custom/comptoir/transaction-dialog"
 import { PaginationComponent } from "@/components/custom/pagination"
-import {
-  useAccountTransactions,
-  useTransactions,
-} from "@/components/providers/transactions-provider"
+import { useTransactions } from "@/components/providers/transactions-provider"
 import { useState } from "react"
-import { TransactionCard } from "../../commandes/transaction-card"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsSimplifiedTrigger,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsSimplifiedTrigger } from "@/components/ui/tabs"
 import { TransactionState } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { TransactionCard } from "@/components/pages/commandes/transaction-card"
 
 export const TransactionList = () => {
   const [page, setPage] = useState(1)
@@ -34,13 +25,22 @@ export const TransactionList = () => {
         <Tabs value={selectedState} onValueChange={setSelectedState}>
           <TabsList>
             <TabsSimplifiedTrigger value="all">Tout</TabsSimplifiedTrigger>
-            <TabsSimplifiedTrigger value={TransactionState.TransactionStarted}>
+            <TabsSimplifiedTrigger
+              value={TransactionState.TransactionStarted}
+              className="text-warning data-active:border-warning!"
+            >
               En cours
             </TabsSimplifiedTrigger>
-            <TabsSimplifiedTrigger value={TransactionState.TransactionFinished}>
+            <TabsSimplifiedTrigger
+              value={TransactionState.TransactionFinished}
+              className="text-primary-lighter data-active:border-primary-lighter!"
+            >
               Terminées
             </TabsSimplifiedTrigger>
-            <TabsSimplifiedTrigger value={TransactionState.TransactionCanceled}>
+            <TabsSimplifiedTrigger
+              value={TransactionState.TransactionCanceled}
+              className="text-destructive data-active:border-destructive!"
+            >
               Annulées
             </TabsSimplifiedTrigger>
           </TabsList>

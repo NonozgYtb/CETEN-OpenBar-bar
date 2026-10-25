@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
-import { toUrl } from "../providers/base-provider"
+import { toUrl } from "@/components/providers/base-provider"
 import { usePathname } from "next/navigation"
 import { Route } from "next"
 import { cn } from "@/lib/utils"

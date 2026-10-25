@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { apis } from "@/components/providers/base-provider"
 import { Route } from "next"
-import { toast, ToastType } from "@/components/ui/toast"
+import { toastError, ToastId } from "@/components/ui/toast"
 import { useRouter } from "next/navigation"
 
 export const RefillDialog = () => {
@@ -39,16 +39,13 @@ export const RefillDialog = () => {
       .startRemoteRefill(Math.floor(amount * 100), {
         withCredentials: true,
       })
-      .then((resp) => {
-        router.push(resp.data.redirect_url as Route)
-      })
+      .then((resp) => router.push(resp.data.redirect_url as Route))
       .catch((reason) => {
-        toast.add({
-          id: "refill-error",
-          type: ToastType.ERROR,
-          title: "Erreur lors du rechargement",
-          description: reason.message,
-        })
+        toastError(
+          ToastId.Refill_Error,
+          "Erreur lors du rechargement",
+          reason.message
+        )
         setTimeout(() => setDialogOpen(false), 1)
       })
   }

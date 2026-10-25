@@ -23,6 +23,7 @@
     }
   },
   "include": [
+    "main.d.ts",
     "next-env.d.ts",
     "next.config.ts",
     "**/*.ts",

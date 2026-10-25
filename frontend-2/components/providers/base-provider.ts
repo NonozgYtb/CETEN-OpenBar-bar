@@ -18,7 +18,6 @@ import {
 import {
   DefaultError,
   QueryKey,
-  skipToken,
   useQuery,
   UseQueryOptions,
 } from "@tanstack/react-query"
@@ -58,7 +57,7 @@ const queryFnWrapper = <T>(promise: AxiosPromise<T>) =>
       throw new Error(error.response?.data?.message || "An error occurred")
     })
 
-export const customUseQuery = <
+export const useCustomQuery = <
   TQueryFnData = unknown,
   TError = DefaultError,
   TData = TQueryFnData,
@@ -70,13 +69,19 @@ export const customUseQuery = <
 }: Omit<UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>, "queryFn"> & {
   queryFn?: () => AxiosPromise<TQueryFnData>
 }) =>
-  useQuery({
+{
+  const data = useQuery({
     ...options,
     queryFn: queryFn ? () => queryFnWrapper(queryFn!()) : undefined,
     retryDelay:
       retryDelay ||
       ((attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)),
-  })
+  });
+  return {
+    ...data,
+    key: options.queryKey,
+  }
+}
 
 export const toUrl = (path: string) => {
   // if the path is already a full URL, return it as is
